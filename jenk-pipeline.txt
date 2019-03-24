@@ -1,0 +1,30 @@
+node{
+  def Namespace = "default"
+  def ImageName = "private-repo:5000/golang"
+  def Creds = "private-repo credential"
+  try{
+  stage('Checkout'){
+      git credentialsId: git credential', 'url: https://github.com/lamantrra/cicd/go.git/'
+      sh "git rev-parse --short HEAD > .git/commit-id"
+      imageTag= readFile('.git/commit-id').trim()
+
+}
+
+stage('RUN Unit Tests'){
+      sh "go test hello_world.go"
+}
+  stage('Docker Build, Push'){
+  withDockerRegistry(credentialsId: "${Creds}", url: private-repo:5000/golang') {
+      sh "docker build -t ${ImageName}:${imageTag} ."
+      sh "docker push ${ImageName}"
+        }
+
+}
+    stage('Deploy on K8s'){
+
+sh "ansible-playbook /var/lib/jenkins/ansible/app-deploy/deploy.yml  --user=jenkins --extra-vars ImageName=${ImageName} --extra-vars imageTag=${imageTag} --extra-vars Namespace=${Namespace}"
+    }
+     } catch (err) {
+      currentBuild.result = 'FAILURE'
+    }
+}
