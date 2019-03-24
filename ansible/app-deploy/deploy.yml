@@ -1,0 +1,22 @@
+- hosts: localhost
+  vars:
+    ImageName: ""
+    Namespace: ""
+    imageTag: ""
+  #remote_user: ansible
+  #become: true
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: Create Namespace {{ Namespace }}
+      command: "kubectl create namespace {{ Namespace }}"
+      ignore_errors: yes
+    - name: Deploy go-test
+      command: "helm install --name=app-{{ Namespace }}  --namespace={{ Namespace }} ../app --set image.repository={{ ImageName }} --set image.tag={{ imageTag }} --set namespace={{ Namespace }}"
+      delegate_to: localhost
+      ignore_errors: yes
+    - name: Update got-test
+      command: "helm upgrade --wait --recreate-pods --namespace={{ Namespace }} --set image.repository={{ ImageName }} --set image.tag={{ imageTag }} --set namespace={{ Namespace }} app-{{ Namespace }} ../app"
+      delegate_to: localhost
+      ignore_errors: yes
+
